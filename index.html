@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leif's RuneScape Tracker</title>
+  <style>
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --card: #0f3460;
+      --accent: #e94560;
+      --gold: #d4a843;
+      --green: #4ecca3;
+      --text: #eee;
+      --muted: #999;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+      color: var(--gold);
+      font-size: 2em;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 30px;
+      font-size: 0.95em;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: var(--surface);
+      border: 2px solid var(--card);
+      border-radius: 8px;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.95em;
+      transition: all 0.2s;
+    }
+    .tab:hover { border-color: var(--gold); }
+    .tab.active { background: var(--card); border-color: var(--gold); color: var(--gold); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      color: var(--gold);
+      font-size: 1.3em;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--card);
+      padding-bottom: 8px;
+    }
+    .card h3 {
+      color: var(--green);
+      font-size: 1.05em;
+      margin: 12px 0 6px 0;
+    }
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+    .checklist label { cursor: pointer; flex: 1; }
+    .checklist .done { text-decoration: line-through; color: var(--muted); }
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      font-weight: bold;
+      margin-left: 6px;
+    }
+    .tag-done { background: var(--green); color: #000; }
+    .tag-wip { background: var(--gold); color: #000; }
+    .tag-todo { background: var(--accent); color: #fff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--card); font-size: 0.9em; }
+    th { color: var(--gold); }
+    .note { background: var(--card); padding: 12px; border-radius: 8px; margin: 8px 0; font-size: 0.9em; }
+    .note strong { color: var(--gold); }
+    .notes-area {
+      width: 100%;
+      min-height: 120px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 12px;
+      font-family: inherit;
+      font-size: 0.9em;
+      resize: vertical;
+    }
+    .save-btn {
+      margin-top: 8px;
+      padding: 8px 20px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .save-btn:hover { opacity: 0.85; }
+    .reset-btn {
+      margin-top: 8px;
+      margin-left: 8px;
+      padding: 8px 20px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    ul:not(.checklist) { padding-left: 20px; }
+    ul:not(.checklist) li { padding: 3px 0; font-size: 0.9em; }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+      .tabs { gap: 4px; }
+      .tab { padding: 8px 12px; font-size: 0.85em; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Leif's RuneScape Tracker</h1>
+<p class="subtitle">Achievement Diaries &bull; Music Cape &bull; Dailies &bull; Boss Notes &bull; Skill Goals</p>
+
+<div class="tabs">
+  <div class="tab active" data-tab="diaries">Achievement Diaries</div>
+  <div class="tab" data-tab="music">Music Cape</div>
+  <div class="tab" data-tab="dailies">Dailies</div>
+  <div class="tab" data-tab="bosses">Boss & Raid Notes</div>
+  <div class="tab" data-tab="skills">Skill Goals</div>
+  <div class="tab" data-tab="notes">Notes</div>
+</div>
+
+<!-- ACHIEVEMENT DIARIES -->
+<div class="panel active" id="diaries">
+  <div class="grid">
+    <div class="card">
+      <h2>Hard Diaries &mdash; In Progress</h2>
+      <ul class="checklist" id="hard-diary-checklist">
+        <li><input type="checkbox" id="hd1"><label for="hd1">Kill Crazy Archaeologist</label></li>
+        <li><input type="checkbox" id="hd2"><label for="hd2">Kill Scorpia</label></li>
+        <li><input type="checkbox" id="hd3"><label for="hd3">Kill Chaos Fanatic</label></li>
+        <li><input type="checkbox" id="hd4"><label for="hd4">Unlock Bones to Peaches (MTA)</label></li>
+        <li><input type="checkbox" id="hd5"><label for="hd5">All other hard diary tasks complete</label></li>
+      </ul>
+      <div class="note">
+        <strong>Bones to Peaches:</strong> Unlock from Rewards Guardian in Mage Training Arena. Grind the 4 rooms until you have enough points.
+      </div>
+    </div>
+    <div class="card">
+      <h2>Diary Overview</h2>
+      <table>
+        <tr><th>Region</th><th>Easy</th><th>Med</th><th>Hard</th><th>Elite</th></tr>
+        <tr><td>Ardougne</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Desert</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Falador</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Fremennik</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Kandarin</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Karamja</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Kourend</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Lumbridge</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Morytania</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Varrock</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Western</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+        <tr><td>Wilderness</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MUSIC CAPE -->
+<div class="panel" id="music">
+  <div class="grid">
+    <div class="card">
+      <h2>Raid & Boss Tracks</h2>
+      <p style="color:var(--muted);margin-bottom:10px;">The tricky ones &mdash; check off as you unlock them.</p>
+      <ul class="checklist" id="music-checklist">
+        <li><input type="checkbox" id="m1"><label for="m1">Theatre of Blood &mdash; Maiden</label></li>
+        <li><input type="checkbox" id="m2"><label for="m2">Theatre of Blood &mdash; Bloat</label></li>
+        <li><input type="checkbox" id="m3"><label for="m3">Theatre of Blood &mdash; Nylocas</label></li>
+        <li><input type="checkbox" id="m4"><label for="m4">Theatre of Blood &mdash; Sotetseg</label></li>
+        <li><input type="checkbox" id="m5"><label for="m5">Theatre of Blood &mdash; Xarpus</label></li>
+        <li><input type="checkbox" id="m6"><label for="m6">Theatre of Blood &mdash; Verzik</label></li>
+        <li><input type="checkbox" id="m7"><label for="m7">Chambers of Xeric &mdash; all room tracks</label></li>
+        <li><input type="checkbox" id="m8"><label for="m8">Tombs of Amascut tracks</label></li>
+        <li><input type="checkbox" id="m9"><label for="m9">Nightmare / Phosani</label></li>
+        <li><input type="checkbox" id="m10"><label for="m10">Nex</label></li>
+        <li><input type="checkbox" id="m11"><label for="m11">The Gauntlet / CG</label></li>
+        <li><input type="checkbox" id="m12"><label for="m12">Zalcano</label></li>
+        <li><input type="checkbox" id="m13"><label for="m13">Tempoross</label></li>
+        <li><input type="checkbox" id="m14"><label for="m14">GWD &mdash; Bandos</label></li>
+        <li><input type="checkbox" id="m15"><label for="m15">GWD &mdash; Sara</label></li>
+        <li><input type="checkbox" id="m16"><label for="m16">GWD &mdash; Zammy</label></li>
+        <li><input type="checkbox" id="m17"><label for="m17">GWD &mdash; Arma</label></li>
+        <li><input type="checkbox" id="m18"><label for="m18">Zulrah</label></li>
+        <li><input type="checkbox" id="m19"><label for="m19">Vorkath</label></li>
+        <li><input type="checkbox" id="m20"><label for="m20">Corporeal Beast</label></li>
+        <li><input type="checkbox" id="m21"><label for="m21">Cerberus</label></li>
+        <li><input type="checkbox" id="m22"><label for="m22">Thermonuclear Smoke Devil</label></li>
+        <li><input type="checkbox" id="m23"><label for="m23">Kraken</label></li>
+        <li><input type="checkbox" id="m24"><label for="m24">Abyssal Sire</label></li>
+        <li><input type="checkbox" id="m25"><label for="m25">Grotesque Guardians</label></li>
+        <li><input type="checkbox" id="m26"><label for="m26">Alchemical Hydra</label></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Commonly Missed Tracks</h2>
+      <ul class="checklist" id="music-misc-checklist">
+        <li><input type="checkbox" id="mm1"><label for="mm1">Barbarian Assault tracks</label></li>
+        <li><input type="checkbox" id="mm2"><label for="mm2">Trouble Brewing</label></li>
+        <li><input type="checkbox" id="mm3"><label for="mm3">Last Man Standing</label></li>
+        <li><input type="checkbox" id="mm4"><label for="mm4">Pest Control</label></li>
+        <li><input type="checkbox" id="mm5"><label for="mm5">Soul Wars</label></li>
+        <li><input type="checkbox" id="mm6"><label for="mm6">Castle Wars</label></li>
+        <li><input type="checkbox" id="mm7"><label for="mm7">Random event tracks (all)</label></li>
+        <li><input type="checkbox" id="mm8"><label for="mm8">Champions' Challenge</label></li>
+        <li><input type="checkbox" id="mm9"><label for="mm9">Mage Training Arena</label></li>
+        <li><input type="checkbox" id="mm10"><label for="mm10">Tithe Farm</label></li>
+        <li><input type="checkbox" id="mm11"><label for="mm11">Volcanic Mine</label></li>
+        <li><input type="checkbox" id="mm12"><label for="mm12">Hallowed Sepulchre</label></li>
+      </ul>
+      <div class="note"><strong>Tip:</strong> Since you've soloed ToB entry, you likely have most Theatre tracks already. Check your in-game music list!</div>
+    </div>
+  </div>
+</div>
+
+<!-- DAILIES -->
+<div class="panel" id="dailies">
+  <div class="grid">
+    <div class="card">
+      <h2>Daily Activities</h2>
+      <ul class="checklist" id="daily-checklist">
+        <li><input type="checkbox" id="d1"><label for="d1">Battlestaves from Zaff (Varrock diary)</label></li>
+        <li><input type="checkbox" id="d2"><label for="d2">Herb boxes from NMZ (15/day)</label></li>
+        <li><input type="checkbox" id="d3"><label for="d3">Birdhouse runs</label></li>
+        <li><input type="checkbox" id="d4"><label for="d4">Farm runs &mdash; herbs</label></li>
+        <li><input type="checkbox" id="d5"><label for="d5">Farm runs &mdash; trees</label></li>
+        <li><input type="checkbox" id="d6"><label for="d6">Farm runs &mdash; fruit trees</label></li>
+        <li><input type="checkbox" id="d7"><label for="d7">Seaweed &amp; sand (crafting)</label></li>
+        <li><input type="checkbox" id="d8"><label for="d8">Kingdom of Miscellania &mdash; check coffers</label></li>
+        <li><input type="checkbox" id="d9"><label for="d9">Shooting Stars</label></li>
+        <li><input type="checkbox" id="d10"><label for="d10">Daily spin (Squeal of Fortune is not a thing, ignore this if OSRS only)</label></li>
+      </ul>
+      <button class="reset-btn" onclick="resetChecklist('daily-checklist')">Reset Dailies</button>
+    </div>
+    <div class="card">
+      <h2>Weekly / Periodic</h2>
+      <ul class="checklist" id="weekly-checklist">
+        <li><input type="checkbox" id="w1"><label for="w1">Tears of Guthix</label></li>
+        <li><input type="checkbox" id="w2"><label for="w2">Manage Miscellania approval rating</label></li>
+        <li><input type="checkbox" id="w3"><label for="w3">Clue scroll grind session</label></li>
+        <li><input type="checkbox" id="w4"><label for="w4">Farm contracts (Farming Guild)</label></li>
+        <li><input type="checkbox" id="w5"><label for="w5">Slayer task</label></li>
+      </ul>
+      <button class="reset-btn" onclick="resetChecklist('weekly-checklist')">Reset Weeklies</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOSS & RAID NOTES -->
+<div class="panel" id="bosses">
+  <div class="grid">
+    <div class="card">
+      <h2>Wilderness Bosses (Hard Diary)</h2>
+      <h3>Scorpia</h3>
+      <ul>
+        <li>Location: Scorpia's Cave, level 53 Wilderness</li>
+        <li>Pray <strong>Protect from Melee</strong></li>
+        <li>Weak to <strong>crush</strong> attacks</li>
+        <li>At 50% HP spawns 2 Guardians (healers) &mdash; kill them ASAP</li>
+        <li>Bring <strong>antipoison</strong></li>
+        <li>Single-combat in the cave = PKers can only 1v1</li>
+      </ul>
+      <h3>Chaos Fanatic</h3>
+      <ul>
+        <li>Location: West of Lava Maze, level 42 Wilderness</li>
+        <li>Pray <strong>Protect from Missiles</strong></li>
+        <li>Special attack unequips your gear &mdash; just re-equip</li>
+        <li><strong>Multi-combat area</strong> &mdash; bring cheap gear</li>
+      </ul>
+      <h3>Crazy Archaeologist</h3>
+      <ul>
+        <li>Location: South of Ruins, level 23 Wilderness</li>
+        <li>Pray <strong>Protect from Missiles</strong></li>
+        <li>Dodge the book special (3x3 area)</li>
+        <li>Easiest of the three &mdash; low risk area</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Raids Notes</h2>
+      <h3>Chambers of Xeric (CoX)</h3>
+      <ul>
+        <li>Room layouts are random &mdash; need multiple runs for all music tracks</li>
+        <li>Soloable with maxed combat</li>
+        <li>Don't need to complete for music &mdash; just enter rooms</li>
+        <li>Key rooms: Ice Demon, Olm, Vasa, Vanguards, Tekton, Muttadiles</li>
+      </ul>
+      <h3>Theatre of Blood (ToB)</h3>
+      <ul>
+        <li>Soloed entry mode &mdash; most tracks likely already unlocked</li>
+        <li>Each room has its own track: Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik</li>
+        <li>Check in-game music list to confirm</li>
+      </ul>
+      <div class="note"><strong>With maxed combat</strong> you can solo CoX comfortably. Just run a few raids to cycle through all room rotations for the music tracks.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SKILL GOALS -->
+<div class="panel" id="skills">
+  <div class="card">
+    <h2>Elite Diary Skill Requirements</h2>
+    <p style="color:var(--muted);margin-bottom:12px;">Key skill levels needed across all elite diaries. Check off once you hit the level.</p>
+    <table>
+      <tr><th>Skill</th><th>Level</th><th>For Diary</th><th>Done</th></tr>
+      <tr><td>Agility</td><td>85</td><td>Ardougne</td><td><input type="checkbox" id="s1"></td></tr>
+      <tr><td>Cooking</td><td>91</td><td>Karamja</td><td><input type="checkbox" id="s2"></td></tr>
+      <tr><td>Crafting</td><td>85</td><td>Fremennik</td><td><input type="checkbox" id="s3"></td></tr>
+      <tr><td>Farming</td><td>91</td><td>Morytania</td><td><input type="checkbox" id="s4"></td></tr>
+      <tr><td>Fishing</td><td>82</td><td>Morytania</td><td><input type="checkbox" id="s5"></td></tr>
+      <tr><td>Fletching</td><td>95</td><td>Desert</td><td><input type="checkbox" id="s6"></td></tr>
+      <tr><td>Herblore</td><td>90</td><td>Kandarin</td><td><input type="checkbox" id="s7"></td></tr>
+      <tr><td>Hunter</td><td>82</td><td>Western</td><td><input type="checkbox" id="s8"></td></tr>
+      <tr><td>Mining</td><td>85</td><td>Falador</td><td><input type="checkbox" id="s9"></td></tr>
+      <tr><td>Runecraft</td><td>86</td><td>Kourend</td><td><input type="checkbox" id="s10"></td></tr>
+      <tr><td>Slayer</td><td>93</td><td>Morytania</td><td><input type="checkbox" id="s11"></td></tr>
+      <tr><td>Smithing</td><td>91</td><td>Falador</td><td><input type="checkbox" id="s12"></td></tr>
+      <tr><td>Thieving</td><td>91</td><td>Ardougne / Desert</td><td><input type="checkbox" id="s13"></td></tr>
+      <tr><td>Woodcutting</td><td>90</td><td>Kourend</td><td><input type="checkbox" id="s14"></td></tr>
+    </table>
+    <div class="note"><strong>Combat stats:</strong> Maxed &mdash; all PvM requirements covered!</div>
+  </div>
+</div>
+
+<!-- NOTES -->
+<div class="panel" id="notes">
+  <div class="card">
+    <h2>General Notes</h2>
+    <textarea class="notes-area" id="general-notes" placeholder="Write your RuneScape notes here... goals, strategies, gear setups, anything!"></textarea>
+    <br>
+    <button class="save-btn" onclick="saveNotes()">Save Notes</button>
+  </div>
+  <div class="card">
+    <h2>Quick Links</h2>
+    <ul style="list-style:none;padding:0;">
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Achievement_Diary" target="_blank">OSRS Wiki &mdash; Achievement Diaries</a></li>
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Music" target="_blank">OSRS Wiki &mdash; Music Track List</a></li>
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Mage_Training_Arena" target="_blank">OSRS Wiki &mdash; Mage Training Arena</a></li>
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Achievement_Diary/Skill_requirements" target="_blank">OSRS Wiki &mdash; Diary Skill Requirements</a></li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Save/load checkbox state to localStorage
+  function saveCheckboxes() {
+    const checks = {};
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      checks[cb.id] = cb.checked;
+    });
+    localStorage.setItem('rs-tracker-checks', JSON.stringify(checks));
+  }
+
+  function loadCheckboxes() {
+    const saved = localStorage.getItem('rs-tracker-checks');
+    if (saved) {
+      const checks = JSON.parse(saved);
+      Object.entries(checks).forEach(([id, checked]) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.checked = checked;
+          updateLabel(el);
+        }
+      });
+    }
+  }
+
+  function updateLabel(checkbox) {
+    const label = checkbox.nextElementSibling;
+    if (label) {
+      label.classList.toggle('done', checkbox.checked);
+    }
+  }
+
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateLabel(cb);
+      saveCheckboxes();
+    });
+  });
+
+  // Reset a checklist section
+  function resetChecklist(id) {
+    document.querySelectorAll('#' + id + ' input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+      updateLabel(cb);
+    });
+    saveCheckboxes();
+  }
+
+  // Notes save/load
+  function saveNotes() {
+    localStorage.setItem('rs-tracker-notes', document.getElementById('general-notes').value);
+    const btn = document.querySelector('.save-btn');
+    btn.textContent = 'Saved!';
+    setTimeout(() => btn.textContent = 'Save Notes', 1500);
+  }
+
+  function loadNotes() {
+    const saved = localStorage.getItem('rs-tracker-notes');
+    if (saved) document.getElementById('general-notes').value = saved;
+  }
+
+  // Init
+  loadCheckboxes();
+  loadNotes();
+</script>
+
+</body>
+</html>
