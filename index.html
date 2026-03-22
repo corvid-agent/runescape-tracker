@@ -35,6 +35,10 @@
     .player-name-row {
       text-align: center;
       margin-bottom: 6px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
     }
     .player-name-row input {
       background: transparent;
@@ -48,11 +52,39 @@
       font-family: inherit;
     }
     .player-name-row input::placeholder { color: var(--muted); }
+    .lookup-btn {
+      padding: 4px 14px;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.85em;
+      transition: opacity 0.2s;
+    }
+    .lookup-btn:hover { opacity: 0.85; }
+    .lookup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .subtitle {
       text-align: center;
       color: var(--muted);
       margin-bottom: 30px;
       font-size: 0.95em;
+    }
+    .live-badge {
+      display: inline-block;
+      background: var(--green);
+      color: #000;
+      font-size: 0.7em;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+      margin-left: 6px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
     }
     .tabs {
       display: flex;
@@ -214,10 +246,127 @@
       font-weight: bold;
     }
     .method-card p { font-size: 0.85em; margin-top: 4px; }
+    /* Stats panel */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .stat-box {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      transition: transform 0.15s;
+    }
+    .stat-box:hover { transform: scale(1.03); }
+    .stat-box .skill-name {
+      font-size: 0.75em;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stat-box .skill-level {
+      font-size: 1.8em;
+      font-weight: bold;
+      color: var(--gold);
+      line-height: 1.2;
+    }
+    .stat-box .skill-xp {
+      font-size: 0.7em;
+      color: var(--muted);
+    }
+    .stat-box .skill-rank {
+      font-size: 0.65em;
+      color: var(--green);
+    }
+    .stat-box.combat { border: 1px solid var(--accent); }
+    .stat-box.maxed .skill-level { color: var(--green); }
+    .stat-summary {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-item .big-num {
+      font-size: 2em;
+      font-weight: bold;
+      color: var(--gold);
+    }
+    .summary-item .big-label {
+      font-size: 0.8em;
+      color: var(--muted);
+    }
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--muted);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-msg {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 0.95em;
+    }
+    .status-msg.error { color: var(--accent); }
+    /* Price table */
+    .price-cell { text-align: right !important; font-family: monospace; }
+    .price-change-up { color: var(--green); font-size: 0.8em; }
+    .price-change-down { color: var(--accent); font-size: 0.8em; }
+    .price-loading { color: var(--muted); font-style: italic; }
+    .last-updated {
+      font-size: 0.75em;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 8px;
+    }
+    /* Diary checker */
+    .diary-req {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.9em;
+    }
+    .diary-req .req-skill { color: var(--text); }
+    .diary-req .req-met { color: var(--green); font-weight: bold; }
+    .diary-req .req-unmet { color: var(--accent); font-weight: bold; }
+    .diary-progress-bar {
+      background: var(--card);
+      border-radius: 4px;
+      height: 8px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    .diary-progress-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+    .diary-progress-text {
+      font-size: 0.8em;
+      color: var(--muted);
+      text-align: right;
+    }
     @media (max-width: 600px) {
       .grid { grid-template-columns: 1fr; }
       .tabs { gap: 4px; }
       .tab { padding: 8px 12px; font-size: 0.85em; }
+      .stats-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
     }
   </style>
 </head>
@@ -226,11 +375,13 @@
 <h1>OSRS Tracker</h1>
 <div class="player-name-row">
   <input type="text" id="player-name" placeholder="Your RSN here" maxlength="12">
+  <button class="lookup-btn" id="lookup-btn" onclick="lookupPlayer()">Lookup</button>
 </div>
-<p class="subtitle">Achievement Diaries &bull; Music Cape &bull; Skilling &bull; Dailies &bull; Boss Notes &bull; Goals</p>
+<p class="subtitle">Stats <span class="live-badge">LIVE</span> &bull; Diaries &bull; Music Cape &bull; Skilling &bull; Dailies &bull; Boss Notes &bull; Goals</p>
 
 <div class="tabs">
-  <div class="tab active" data-tab="diaries">Diaries</div>
+  <div class="tab active" data-tab="stats">My Stats</div>
+  <div class="tab" data-tab="diaries">Diaries</div>
   <div class="tab" data-tab="music">Music Cape</div>
   <div class="tab" data-tab="skilling">Skilling</div>
   <div class="tab" data-tab="dailies">Dailies</div>
@@ -239,8 +390,24 @@
   <div class="tab" data-tab="notes">Notes</div>
 </div>
 
+<!-- STATS -->
+<div class="panel active" id="stats">
+  <div class="card">
+    <h2>Player Stats <span class="live-badge">LIVE</span></h2>
+    <p style="color:var(--muted);margin-bottom:10px;">Enter your RSN above and click Lookup to pull your live stats from the OSRS Hiscores.</p>
+    <div id="stats-status" class="status-msg">Enter your RuneScape name and click Lookup to get started.</div>
+    <div id="stats-summary" class="stat-summary" style="display:none;"></div>
+    <div id="stats-grid" class="stats-grid" style="display:none;"></div>
+  </div>
+  <div class="card" id="diary-checker-card" style="display:none;">
+    <h2>Diary Skill Requirements Checker</h2>
+    <p style="color:var(--muted);margin-bottom:10px;">Based on your stats, here's what you can complete. Click a diary tier to expand.</p>
+    <div id="diary-checker"></div>
+  </div>
+</div>
+
 <!-- ACHIEVEMENT DIARIES -->
-<div class="panel active" id="diaries">
+<div class="panel" id="diaries">
   <div class="card">
     <h2>Achievement Diary Overview</h2>
     <p style="color:var(--muted);margin-bottom:10px;">Click any tag to cycle: Todo &rarr; WIP &rarr; Done &rarr; N/A &rarr; Todo</p>
@@ -328,6 +495,25 @@
 
 <!-- SKILLING -->
 <div class="panel" id="skilling">
+  <div class="card">
+    <h2>Live GE Prices <span class="live-badge">LIVE</span></h2>
+    <p style="color:var(--muted);margin-bottom:10px;">Real-time prices from the OSRS Wiki GE API. Updates every 5 minutes.</p>
+    <div class="grid">
+      <div>
+        <h3>Cooking &amp; Fish</h3>
+        <table id="price-table-cooking">
+          <tr><th>Item</th><th>Raw Price</th><th>Cooked Price</th><th>Profit/Loss</th></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Popular Items</h3>
+        <table id="price-table-popular">
+          <tr><th>Item</th><th>Buy Price</th><th>Change</th></tr>
+        </table>
+      </div>
+    </div>
+    <div class="last-updated" id="price-updated"></div>
+  </div>
   <div class="grid">
     <div class="card">
       <h2>Cooking Training Guide</h2>
@@ -391,8 +577,8 @@
   </div>
   <div class="grid">
     <div class="card">
-      <h2>Profitable Recipes</h2>
-      <table>
+      <h2>Profitable Recipes <span id="profit-live-badge" class="live-badge" style="display:none;">LIVE PRICES</span></h2>
+      <table id="profit-table">
         <tr><th>Food</th><th>Level</th><th>Notes</th></tr>
         <tr><td>Karambwan</td><td>30</td><td class="profit">Great profit + fast XP with 1-tick method</td></tr>
         <tr><td>Anglerfish</td><td>84</td><td class="profit">Consistent profit, popular PvM food</td></tr>
@@ -580,6 +766,359 @@
 </div>
 
 <script>
+  // ============================================
+  // OSRS HISCORES & WIKI API INTEGRATION
+  // ============================================
+
+  const SKILL_NAMES = [
+    'Overall', 'Attack', 'Defence', 'Strength', 'Hitpoints', 'Ranged', 'Prayer',
+    'Magic', 'Cooking', 'Woodcutting', 'Fletching', 'Fishing', 'Firemaking',
+    'Crafting', 'Smithing', 'Mining', 'Herblore', 'Agility', 'Thieving',
+    'Slayer', 'Farming', 'Runecraft', 'Hunter', 'Construction'
+  ];
+
+  const COMBAT_SKILLS = ['Attack', 'Defence', 'Strength', 'Hitpoints', 'Ranged', 'Prayer', 'Magic'];
+
+  // Item IDs for GE price lookups (from OSRS Wiki)
+  const COOKING_ITEMS = {
+    'Raw Shrimp': { raw: 317, cooked: 315 },
+    'Raw Trout': { raw: 335, cooked: 333 },
+    'Raw Salmon': { raw: 331, cooked: 329 },
+    'Raw Lobster': { raw: 377, cooked: 379 },
+    'Raw Swordfish': { raw: 371, cooked: 373 },
+    'Raw Monkfish': { raw: 7944, cooked: 7946 },
+    'Raw Shark': { raw: 383, cooked: 385 },
+    'Raw Anglerfish': { raw: 13439, cooked: 13441 },
+    'Raw Karambwan': { raw: 3142, cooked: 3144 },
+    'Raw Manta Ray': { raw: 389, cooked: 391 },
+    'Raw Dark Crab': { raw: 11934, cooked: 11936 },
+  };
+
+  const POPULAR_ITEMS = {
+    'Old school bond': 13190,
+    'Abyssal whip': 4151,
+    'Dragon bones': 536,
+    'Ranarr seed': 5295,
+    'Snapdragon seed': 5300,
+    'Cannonball': 2,
+    'Zulrah\'s scales': 12934,
+    'Blood rune': 565,
+    'Death rune': 560,
+    'Nature rune': 561,
+    'Battlestaff': 1397,
+    'Herb box': 11738,
+  };
+
+  // Diary skill requirements (subset of most important ones)
+  const DIARY_REQS = {
+    'Ardougne Elite': { Thieving: 82, Farming: 85, Fletching: 69, Smithing: 91, Cooking: 91, Crafting: 85, Fishing: 81, Agility: 56, Magic: 94, Construction: 72 },
+    'Desert Elite': { Thieving: 91, Prayer: 85, Magic: 68, Construction: 78, Fletching: 95, Agility: 70, Mining: 45 },
+    'Falador Elite': { Agility: 80, Mining: 72, Farming: 91, Runecraft: 88, Slayer: 72, Woodcutting: 75, Thieving: 13 },
+    'Fremennik Elite': { Runecraft: 82, Crafting: 80, Hunter: 55, Agility: 80, Slayer: 83, Mining: 70, Smithing: 60, Woodcutting: 56, Construction: 50 },
+    'Kandarin Elite': { Agility: 60, Fishing: 76, Cooking: 80, Smithing: 75, Fletching: 70, Magic: 87, Firemaking: 85, Farming: 79 },
+    'Karamja Elite': { Woodcutting: 34, Agility: 53, Cooking: 91, Runecraft: 91, Mining: 52, Smithing: 40, Farming: 72 },
+    'Kourend Elite': { Hunter: 84, Woodcutting: 90, Farming: 74, Mining: 38, Slayer: 95, Magic: 90, Smithing: 70, Agility: 44 },
+    'Lumbridge Elite': { Agility: 70, Woodcutting: 75, Smithing: 88, Runecraft: 76, Mining: 68, Firemaking: 75, Magic: 75, Fishing: 53, Strength: 70, Prayer: 59, Ranged: 70, Thieving: 78 },
+    'Morytania Elite': { Crafting: 84, Mining: 55, Firemaking: 80, Slayer: 85, Farming: 53, Prayer: 70, Fishing: 96, Magic: 83, Construction: 50 },
+    'Varrock Elite': { Magic: 86, Cooking: 95, Fletching: 81, Herblore: 90, Farming: 68, Thieving: 78, Smithing: 89, Firemaking: 40, Runecraft: 78 },
+    'Western Elite': { Agility: 93, Thieving: 85, Farming: 75, Fletching: 85, Fishing: 46, Mining: 70, Slayer: 93, Magic: 64, Firemaking: 50, Hunter: 69 },
+    'Wilderness Elite': { Agility: 60, Magic: 96, Cooking: 90, Smithing: 75, Fishing: 85, Slayer: 83, Mining: 85, Thieving: 84, Woodcutting: 75 },
+    'Ardougne Hard': { Thieving: 72, Farming: 70, Construction: 50, Cooking: 53, Crafting: 56, Fletching: 5, Agility: 39, Mining: 52, Magic: 66, Ranged: 60, Smithing: 68, Strength: 38 },
+    'Desert Hard': { Thieving: 53, Magic: 68, Agility: 70, Crafting: 55, Mining: 45, Prayer: 43, Slayer: 65, Herblore: 45, Woodcutting: 55, Firemaking: 60 },
+    'Falador Hard': { Agility: 59, Mining: 60, Farming: 52, Runecraft: 56, Slayer: 72, Defence: 70, Prayer: 70, Strength: 37, Cooking: 53, Firemaking: 49, Thieving: 58 },
+    'Fremennik Hard': { Hunter: 55, Agility: 32, Mining: 70, Thieving: 42, Crafting: 61, Construction: 20, Woodcutting: 56, Fletching: 25, Slayer: 47, Magic: 72 },
+    'Kandarin Hard': { Agility: 60, Fishing: 70, Cooking: 43, Smithing: 75, Fletching: 70, Magic: 56, Firemaking: 65, Thieving: 53, Prayer: 70, Strength: 50, Defence: 70 },
+    'Karamja Hard': { Woodcutting: 34, Agility: 53, Mining: 52, Runecraft: 44, Cooking: 53, Smithing: 40, Farming: 72, Ranged: 42, Thieving: 50 },
+    'Kourend Hard': { Mining: 38, Woodcutting: 60, Magic: 66, Hunter: 49, Farming: 45, Smithing: 70, Agility: 44, Slayer: 62, Thieving: 20 },
+    'Lumbridge Hard': { Agility: 46, Woodcutting: 57, Smithing: 68, Runecraft: 59, Mining: 63, Firemaking: 65, Crafting: 70, Magic: 60, Prayer: 52, Ranged: 50, Strength: 50 },
+    'Morytania Hard': { Crafting: 50, Mining: 55, Prayer: 70, Firemaking: 50, Farming: 53, Magic: 66, Slayer: 58, Construction: 50, Woodcutting: 50, Herblore: 22 },
+    'Varrock Hard': { Magic: 54, Cooking: 65, Fletching: 81, Herblore: 52, Farming: 68, Thieving: 53, Firemaking: 40, Agility: 51, Prayer: 52, Hunter: 66, Construction: 50 },
+    'Western Hard': { Agility: 56, Thieving: 75, Farming: 68, Fletching: 50, Mining: 70, Fishing: 46, Firemaking: 50, Hunter: 69, Woodcutting: 50, Ranged: 30, Slayer: 72 },
+    'Wilderness Hard': { Agility: 60, Magic: 66, Cooking: 90, Smithing: 75, Fishing: 53, Slayer: 83, Mining: 55, Prayer: 52, Strength: 60, Hunter: 59, Woodcutting: 61 },
+  };
+
+  let playerStats = null; // { skills: [{name, level, xp, rank}] }
+  let gePrices = null;
+
+  // Hiscores lookup via CORS proxy
+  async function lookupPlayer() {
+    const name = document.getElementById('player-name').value.trim();
+    if (!name) return;
+
+    const btn = document.getElementById('lookup-btn');
+    const statusEl = document.getElementById('stats-status');
+    btn.disabled = true;
+    btn.textContent = 'Looking up...';
+    statusEl.innerHTML = '<span class="loading-spinner"></span> Fetching stats for <strong>' + escapeHtml(name) + '</strong>...';
+    statusEl.className = 'status-msg';
+
+    try {
+      // Try direct hiscores API first
+      const data = await fetchHiscores(name);
+      playerStats = parseHiscores(data);
+      renderStats();
+      renderDiaryChecker();
+      statusEl.style.display = 'none';
+    } catch (err) {
+      statusEl.innerHTML = 'Could not fetch stats for <strong>' + escapeHtml(name) + '</strong>. ' +
+        'Make sure the RSN is correct and the account is on the hiscores.<br><br>' +
+        '<span style="font-size:0.85em;">Error: ' + escapeHtml(err.message) + '</span>';
+      statusEl.className = 'status-msg error';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Lookup';
+    }
+  }
+
+  async function fetchHiscores(name) {
+    const encodedName = encodeURIComponent(name);
+    // Use the OSRS hiscores lite endpoint via CORS proxy
+    const proxyUrls = [
+      'https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=' + encodedName,
+    ];
+
+    for (const url of proxyUrls) {
+      try {
+        const resp = await fetch(url);
+        if (resp.ok) return await resp.text();
+      } catch (e) {
+        // Try next proxy
+      }
+    }
+
+    // Fallback: try a CORS-friendly proxy
+    const corsProxy = 'https://corsproxy.io/?' + encodeURIComponent('https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=' + encodedName);
+    const resp = await fetch(corsProxy);
+    if (!resp.ok) throw new Error('Player not found on hiscores (HTTP ' + resp.status + ')');
+    return await resp.text();
+  }
+
+  function parseHiscores(csv) {
+    const lines = csv.trim().split('\n');
+    const skills = [];
+    for (let i = 0; i < SKILL_NAMES.length && i < lines.length; i++) {
+      const parts = lines[i].split(',');
+      skills.push({
+        name: SKILL_NAMES[i],
+        rank: parseInt(parts[0]),
+        level: parseInt(parts[1]),
+        xp: parseInt(parts[2]),
+      });
+    }
+    return { skills };
+  }
+
+  function renderStats() {
+    if (!playerStats) return;
+    const grid = document.getElementById('stats-grid');
+    const summary = document.getElementById('stats-summary');
+    grid.style.display = '';
+    summary.style.display = '';
+
+    // Summary
+    const overall = playerStats.skills[0];
+    const totalLevel = overall.level;
+    const totalXp = overall.xp;
+    const combatLevel = calcCombat(playerStats.skills);
+    const questPoints = 0; // Not available from lite endpoint
+
+    summary.innerHTML = `
+      <div class="summary-item"><div class="big-num">${totalLevel.toLocaleString()}</div><div class="big-label">Total Level</div></div>
+      <div class="summary-item"><div class="big-num">${combatLevel}</div><div class="big-label">Combat Level</div></div>
+      <div class="summary-item"><div class="big-num">${(totalXp / 1000000).toFixed(1)}M</div><div class="big-label">Total XP</div></div>
+      <div class="summary-item"><div class="big-num">${overall.rank > 0 ? '#' + overall.rank.toLocaleString() : 'N/A'}</div><div class="big-label">Overall Rank</div></div>
+    `;
+
+    // Grid
+    grid.innerHTML = '';
+    for (let i = 1; i < playerStats.skills.length; i++) {
+      const s = playerStats.skills[i];
+      const isCombat = COMBAT_SKILLS.includes(s.name);
+      const isMaxed = s.level >= 99;
+      const box = document.createElement('div');
+      box.className = 'stat-box' + (isCombat ? ' combat' : '') + (isMaxed ? ' maxed' : '');
+      box.innerHTML = `
+        <div class="skill-name">${s.name}</div>
+        <div class="skill-level">${s.level}</div>
+        <div class="skill-xp">${s.xp.toLocaleString()} XP</div>
+        ${s.rank > 0 ? '<div class="skill-rank">Rank ' + s.rank.toLocaleString() + '</div>' : ''}
+      `;
+      grid.appendChild(box);
+    }
+
+    document.getElementById('diary-checker-card').style.display = '';
+  }
+
+  function calcCombat(skills) {
+    const get = name => (skills.find(s => s.name === name) || {}).level || 1;
+    const att = get('Attack'), str = get('Strength'), def = get('Defence');
+    const hp = get('Hitpoints'), pray = get('Prayer'), rng = get('Ranged'), mag = get('Magic');
+    const base = 0.25 * (def + hp + Math.floor(pray / 2));
+    const melee = 0.325 * (att + str);
+    const range = 0.325 * (Math.floor(rng / 2) + rng);
+    const mage = 0.325 * (Math.floor(mag / 2) + mag);
+    return Math.floor(base + Math.max(melee, range, mage));
+  }
+
+  // Diary checker
+  function renderDiaryChecker() {
+    if (!playerStats) return;
+    const container = document.getElementById('diary-checker');
+    container.innerHTML = '';
+
+    const skillMap = {};
+    playerStats.skills.forEach(s => { skillMap[s.name] = s.level; });
+
+    // Group by region
+    const regions = {};
+    Object.entries(DIARY_REQS).forEach(([key, reqs]) => {
+      const parts = key.split(' ');
+      const tier = parts.pop();
+      const region = parts.join(' ');
+      if (!regions[region]) regions[region] = {};
+      regions[region][tier] = reqs;
+    });
+
+    Object.entries(regions).sort((a, b) => a[0].localeCompare(b[0])).forEach(([region, tiers]) => {
+      const regionDiv = document.createElement('div');
+      regionDiv.style.marginBottom = '12px';
+
+      ['Hard', 'Elite'].forEach(tier => {
+        if (!tiers[tier]) return;
+        const reqs = tiers[tier];
+        const entries = Object.entries(reqs);
+        const met = entries.filter(([skill, lvl]) => (skillMap[skill] || 1) >= lvl).length;
+        const total = entries.length;
+        const pct = Math.round((met / total) * 100);
+        const allMet = met === total;
+
+        const header = document.createElement('div');
+        header.style.cssText = 'cursor:pointer;padding:8px 12px;background:var(--card);border-radius:6px;margin:4px 0;display:flex;justify-content:space-between;align-items:center;';
+        header.innerHTML = `
+          <span><strong>${region} ${tier}</strong></span>
+          <span>
+            <span style="color:${allMet ? 'var(--green)' : pct > 50 ? 'var(--gold)' : 'var(--accent)'}">${met}/${total}</span>
+            <span style="color:var(--muted);font-size:0.85em;margin-left:6px;">${pct}%</span>
+            ${allMet ? ' <span style="color:var(--green);">&#10003;</span>' : ''}
+          </span>
+        `;
+
+        const details = document.createElement('div');
+        details.style.cssText = 'display:none;padding:6px 12px;';
+
+        // Progress bar
+        const bar = document.createElement('div');
+        bar.className = 'diary-progress-bar';
+        bar.innerHTML = '<div class="diary-progress-fill" style="width:' + pct + '%"></div>';
+        details.appendChild(bar);
+
+        entries.sort((a, b) => {
+          const aMet = (skillMap[a[0]] || 1) >= a[1];
+          const bMet = (skillMap[b[0]] || 1) >= b[1];
+          if (aMet !== bMet) return aMet ? 1 : -1;
+          return a[0].localeCompare(b[0]);
+        }).forEach(([skill, lvl]) => {
+          const myLvl = skillMap[skill] || 1;
+          const isMet = myLvl >= lvl;
+          const row = document.createElement('div');
+          row.className = 'diary-req';
+          row.innerHTML = `
+            <span class="req-skill">${skill} ${lvl}</span>
+            <span class="${isMet ? 'req-met' : 'req-unmet'}">${isMet ? myLvl + ' &#10003;' : myLvl + ' (need ' + (lvl - myLvl) + ' more)'}</span>
+          `;
+          details.appendChild(row);
+        });
+
+        header.addEventListener('click', () => {
+          details.style.display = details.style.display === 'none' ? 'block' : 'none';
+        });
+
+        regionDiv.appendChild(header);
+        regionDiv.appendChild(details);
+      });
+
+      container.appendChild(regionDiv);
+    });
+  }
+
+  // ============================================
+  // GE PRICE API (OSRS Wiki)
+  // ============================================
+
+  async function fetchGEPrices() {
+    try {
+      const resp = await fetch('https://prices.runescape.wiki/api/v1/osrs/latest', {
+        headers: { 'User-Agent': 'osrs-tracker-ghpages' }
+      });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const json = await resp.json();
+      gePrices = json.data;
+      renderPrices();
+    } catch (err) {
+      console.warn('Could not fetch GE prices:', err);
+      document.getElementById('price-updated').textContent = 'Could not load live prices. Prices shown are static estimates.';
+    }
+  }
+
+  function getPrice(itemId) {
+    if (!gePrices || !gePrices[itemId]) return null;
+    const d = gePrices[itemId];
+    // Use the average of high and low, or whichever is available
+    if (d.high && d.low) return Math.round((d.high + d.low) / 2);
+    return d.high || d.low || null;
+  }
+
+  function formatGp(amount) {
+    if (amount === null || amount === undefined) return '<span class="price-loading">N/A</span>';
+    if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
+    if (amount >= 1000) return (amount / 1000).toFixed(0) + 'K';
+    return amount.toLocaleString();
+  }
+
+  function renderPrices() {
+    if (!gePrices) return;
+
+    // Cooking table
+    const cookTable = document.getElementById('price-table-cooking');
+    cookTable.innerHTML = '<tr><th>Item</th><th class="price-cell">Raw</th><th class="price-cell">Cooked</th><th class="price-cell">Profit</th></tr>';
+    Object.entries(COOKING_ITEMS).forEach(([name, ids]) => {
+      const rawPrice = getPrice(ids.raw);
+      const cookedPrice = getPrice(ids.cooked);
+      const profit = (rawPrice !== null && cookedPrice !== null) ? cookedPrice - rawPrice : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name.replace('Raw ', '')}</td>
+        <td class="price-cell">${formatGp(rawPrice)}</td>
+        <td class="price-cell">${formatGp(cookedPrice)}</td>
+        <td class="price-cell ${profit !== null ? (profit >= 0 ? 'profit' : 'loss') : ''}">${profit !== null ? (profit >= 0 ? '+' : '') + formatGp(profit) : 'N/A'}</td>
+      `;
+      cookTable.appendChild(tr);
+    });
+
+    // Popular items table
+    const popTable = document.getElementById('price-table-popular');
+    popTable.innerHTML = '<tr><th>Item</th><th class="price-cell">Price</th><th class="price-cell">Spread</th></tr>';
+    Object.entries(POPULAR_ITEMS).forEach(([name, id]) => {
+      const d = gePrices[id];
+      const price = getPrice(id);
+      const spread = d ? ((d.high || 0) - (d.low || 0)) : null;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td class="price-cell">${formatGp(price)}</td>
+        <td class="price-cell" style="color:var(--muted);font-size:0.85em;">${spread !== null ? formatGp(spread) + ' spread' : 'N/A'}</td>
+      `;
+      popTable.appendChild(tr);
+    });
+
+    document.getElementById('price-updated').textContent = 'Prices last updated: ' + new Date().toLocaleTimeString();
+    document.getElementById('profit-live-badge').style.display = 'inline-block';
+  }
+
+  // ============================================
+  // ORIGINAL FUNCTIONALITY (tabs, checklists, etc.)
+  // ============================================
+
   // Tab switching
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
@@ -595,6 +1134,9 @@
   nameInput.addEventListener('input', () => {
     localStorage.setItem('rs-tracker-name', nameInput.value);
     document.title = nameInput.value ? nameInput.value + "'s OSRS Tracker" : 'OSRS Tracker';
+  });
+  nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') lookupPlayer();
   });
   function loadName() {
     const saved = localStorage.getItem('rs-tracker-name');
@@ -781,12 +1323,31 @@
     if (saved) document.getElementById('general-notes').value = saved;
   }
 
-  // Init
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ============================================
+  // INIT
+  // ============================================
   loadName();
   loadCheckboxes();
   loadNotes();
   loadDiaryStates();
   loadCustomItems();
+
+  // Auto-fetch GE prices on load
+  fetchGEPrices();
+
+  // Auto-refresh prices every 5 minutes
+  setInterval(fetchGEPrices, 5 * 60 * 1000);
+
+  // Auto-lookup if name is saved
+  if (nameInput.value.trim()) {
+    setTimeout(lookupPlayer, 500);
+  }
 </script>
 
 </body>
