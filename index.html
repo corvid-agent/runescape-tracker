@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leif's RuneScape Tracker</title>
+  <title>OSRS Tracker</title>
   <style>
     :root {
       --bg: #1a1a2e;
@@ -29,9 +29,25 @@
       text-align: center;
       color: var(--gold);
       font-size: 2em;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     }
+    .player-name-row {
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .player-name-row input {
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed var(--gold);
+      color: var(--gold);
+      font-size: 1.1em;
+      text-align: center;
+      width: 200px;
+      outline: none;
+      font-family: inherit;
+    }
+    .player-name-row input::placeholder { color: var(--muted); }
     .subtitle {
       text-align: center;
       color: var(--muted);
@@ -92,9 +108,21 @@
       height: 18px;
       accent-color: var(--green);
       cursor: pointer;
+      flex-shrink: 0;
     }
     .checklist label { cursor: pointer; flex: 1; }
     .checklist .done { text-decoration: line-through; color: var(--muted); }
+    .remove-item {
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      font-size: 1.1em;
+      padding: 0 4px;
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+    .remove-item:hover { opacity: 1; }
     .tag {
       display: inline-block;
       padding: 2px 8px;
@@ -102,10 +130,15 @@
       font-size: 0.75em;
       font-weight: bold;
       margin-left: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s;
     }
+    .tag:hover { transform: scale(1.1); }
     .tag-done { background: var(--green); color: #000; }
     .tag-wip { background: var(--gold); color: #000; }
     .tag-todo { background: var(--accent); color: #fff; }
+    .tag-na { background: #555; color: #ccc; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; }
     table { width: 100%; border-collapse: collapse; margin-top: 8px; }
     th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--card); font-size: 0.9em; }
@@ -124,32 +157,63 @@
       font-size: 0.9em;
       resize: vertical;
     }
-    .save-btn {
+    .btn {
       margin-top: 8px;
       padding: 8px 20px;
-      background: var(--green);
-      color: #000;
       border: none;
       border-radius: 6px;
       cursor: pointer;
       font-weight: bold;
+      font-size: 0.9em;
     }
+    .save-btn { background: var(--green); color: #000; }
     .save-btn:hover { opacity: 0.85; }
-    .reset-btn {
-      margin-top: 8px;
-      margin-left: 8px;
-      padding: 8px 20px;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
+    .reset-btn { background: var(--accent); color: #fff; margin-left: 8px; }
+    .reset-btn:hover { opacity: 0.85; }
+    .add-btn { background: var(--card); color: var(--gold); border: 1px dashed var(--gold); }
+    .add-btn:hover { background: var(--gold); color: #000; }
+    .add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
     }
+    .add-row input {
+      flex: 1;
+      padding: 8px 12px;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9em;
+    }
+    .add-row input::placeholder { color: var(--muted); }
     ul:not(.checklist) { padding-left: 20px; }
     ul:not(.checklist) li { padding: 3px 0; font-size: 0.9em; }
     a { color: var(--green); text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .xp-table { font-size: 0.85em; }
+    .xp-table td:nth-child(2), .xp-table td:nth-child(3) { text-align: right; }
+    .xp-table th:nth-child(2), .xp-table th:nth-child(3) { text-align: right; }
+    .profit { color: var(--green); }
+    .loss { color: var(--accent); }
+    .method-card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+    .method-card h4 {
+      color: var(--gold);
+      margin-bottom: 4px;
+      font-size: 0.95em;
+    }
+    .method-card .level-req {
+      color: var(--green);
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .method-card p { font-size: 0.85em; margin-top: 4px; }
     @media (max-width: 600px) {
       .grid { grid-template-columns: 1fr; }
       .tabs { gap: 4px; }
@@ -159,51 +223,50 @@
 </head>
 <body>
 
-<h1>Leif's RuneScape Tracker</h1>
-<p class="subtitle">Achievement Diaries &bull; Music Cape &bull; Dailies &bull; Boss Notes &bull; Skill Goals</p>
+<h1>OSRS Tracker</h1>
+<div class="player-name-row">
+  <input type="text" id="player-name" placeholder="Your RSN here" maxlength="12">
+</div>
+<p class="subtitle">Achievement Diaries &bull; Music Cape &bull; Skilling &bull; Dailies &bull; Boss Notes &bull; Goals</p>
 
 <div class="tabs">
-  <div class="tab active" data-tab="diaries">Achievement Diaries</div>
+  <div class="tab active" data-tab="diaries">Diaries</div>
   <div class="tab" data-tab="music">Music Cape</div>
+  <div class="tab" data-tab="skilling">Skilling</div>
   <div class="tab" data-tab="dailies">Dailies</div>
-  <div class="tab" data-tab="bosses">Boss & Raid Notes</div>
-  <div class="tab" data-tab="skills">Skill Goals</div>
+  <div class="tab" data-tab="bosses">Boss & Raids</div>
+  <div class="tab" data-tab="goals">Goals</div>
   <div class="tab" data-tab="notes">Notes</div>
 </div>
 
 <!-- ACHIEVEMENT DIARIES -->
 <div class="panel active" id="diaries">
-  <div class="grid">
-    <div class="card">
-      <h2>Hard Diaries &mdash; In Progress</h2>
-      <ul class="checklist" id="hard-diary-checklist">
-        <li><input type="checkbox" id="hd1"><label for="hd1">Kill Crazy Archaeologist</label></li>
-        <li><input type="checkbox" id="hd2"><label for="hd2">Kill Scorpia</label></li>
-        <li><input type="checkbox" id="hd3"><label for="hd3">Kill Chaos Fanatic</label></li>
-        <li><input type="checkbox" id="hd4"><label for="hd4">Unlock Bones to Peaches (MTA)</label></li>
-        <li><input type="checkbox" id="hd5"><label for="hd5">All other hard diary tasks complete</label></li>
-      </ul>
-      <div class="note">
-        <strong>Bones to Peaches:</strong> Unlock from Rewards Guardian in Mage Training Arena. Grind the 4 rooms until you have enough points.
-      </div>
-    </div>
-    <div class="card">
-      <h2>Diary Overview</h2>
-      <table>
-        <tr><th>Region</th><th>Easy</th><th>Med</th><th>Hard</th><th>Elite</th></tr>
-        <tr><td>Ardougne</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Desert</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Falador</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Fremennik</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Kandarin</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Karamja</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Kourend</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Lumbridge</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Morytania</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Varrock</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Western</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-        <tr><td>Wilderness</td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-done">Done</span></td><td><span class="tag tag-wip">WIP</span></td><td><span class="tag tag-todo">Todo</span></td></tr>
-      </table>
+  <div class="card">
+    <h2>Achievement Diary Overview</h2>
+    <p style="color:var(--muted);margin-bottom:10px;">Click any tag to cycle: Todo &rarr; WIP &rarr; Done &rarr; N/A &rarr; Todo</p>
+    <table id="diary-table">
+      <tr><th>Region</th><th>Easy</th><th>Med</th><th>Hard</th><th>Elite</th></tr>
+      <tr><td>Ardougne</td><td><span class="tag tag-todo" data-diary="ardougne-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="ardougne-med">Todo</span></td><td><span class="tag tag-todo" data-diary="ardougne-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="ardougne-elite">Todo</span></td></tr>
+      <tr><td>Desert</td><td><span class="tag tag-todo" data-diary="desert-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="desert-med">Todo</span></td><td><span class="tag tag-todo" data-diary="desert-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="desert-elite">Todo</span></td></tr>
+      <tr><td>Falador</td><td><span class="tag tag-todo" data-diary="falador-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="falador-med">Todo</span></td><td><span class="tag tag-todo" data-diary="falador-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="falador-elite">Todo</span></td></tr>
+      <tr><td>Fremennik</td><td><span class="tag tag-todo" data-diary="fremennik-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="fremennik-med">Todo</span></td><td><span class="tag tag-todo" data-diary="fremennik-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="fremennik-elite">Todo</span></td></tr>
+      <tr><td>Kandarin</td><td><span class="tag tag-todo" data-diary="kandarin-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="kandarin-med">Todo</span></td><td><span class="tag tag-todo" data-diary="kandarin-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="kandarin-elite">Todo</span></td></tr>
+      <tr><td>Karamja</td><td><span class="tag tag-todo" data-diary="karamja-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="karamja-med">Todo</span></td><td><span class="tag tag-todo" data-diary="karamja-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="karamja-elite">Todo</span></td></tr>
+      <tr><td>Kourend</td><td><span class="tag tag-todo" data-diary="kourend-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="kourend-med">Todo</span></td><td><span class="tag tag-todo" data-diary="kourend-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="kourend-elite">Todo</span></td></tr>
+      <tr><td>Lumbridge</td><td><span class="tag tag-todo" data-diary="lumbridge-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="lumbridge-med">Todo</span></td><td><span class="tag tag-todo" data-diary="lumbridge-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="lumbridge-elite">Todo</span></td></tr>
+      <tr><td>Morytania</td><td><span class="tag tag-todo" data-diary="morytania-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="morytania-med">Todo</span></td><td><span class="tag tag-todo" data-diary="morytania-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="morytania-elite">Todo</span></td></tr>
+      <tr><td>Varrock</td><td><span class="tag tag-todo" data-diary="varrock-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="varrock-med">Todo</span></td><td><span class="tag tag-todo" data-diary="varrock-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="varrock-elite">Todo</span></td></tr>
+      <tr><td>Western</td><td><span class="tag tag-todo" data-diary="western-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="western-med">Todo</span></td><td><span class="tag tag-todo" data-diary="western-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="western-elite">Todo</span></td></tr>
+      <tr><td>Wilderness</td><td><span class="tag tag-todo" data-diary="wilderness-easy">Todo</span></td><td><span class="tag tag-todo" data-diary="wilderness-med">Todo</span></td><td><span class="tag tag-todo" data-diary="wilderness-hard">Todo</span></td><td><span class="tag tag-todo" data-diary="wilderness-elite">Todo</span></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h2>My Diary Tasks</h2>
+    <p style="color:var(--muted);margin-bottom:8px;">Add specific diary tasks you're working on.</p>
+    <ul class="checklist" id="diary-tasks-checklist"></ul>
+    <div class="add-row">
+      <input type="text" id="diary-task-input" placeholder="e.g. Kill Scorpia (Wilderness Hard)">
+      <button class="btn add-btn" onclick="addCustomItem('diary-tasks-checklist', 'diary-task-input')">+ Add</button>
     </div>
   </div>
 </div>
@@ -213,7 +276,7 @@
   <div class="grid">
     <div class="card">
       <h2>Raid & Boss Tracks</h2>
-      <p style="color:var(--muted);margin-bottom:10px;">The tricky ones &mdash; check off as you unlock them.</p>
+      <p style="color:var(--muted);margin-bottom:10px;">Check off as you unlock them in-game.</p>
       <ul class="checklist" id="music-checklist">
         <li><input type="checkbox" id="m1"><label for="m1">Theatre of Blood &mdash; Maiden</label></li>
         <li><input type="checkbox" id="m2"><label for="m2">Theatre of Blood &mdash; Bloat</label></li>
@@ -259,7 +322,94 @@
         <li><input type="checkbox" id="mm11"><label for="mm11">Volcanic Mine</label></li>
         <li><input type="checkbox" id="mm12"><label for="mm12">Hallowed Sepulchre</label></li>
       </ul>
-      <div class="note"><strong>Tip:</strong> Since you've soloed ToB entry, you likely have most Theatre tracks already. Check your in-game music list!</div>
+    </div>
+  </div>
+</div>
+
+<!-- SKILLING -->
+<div class="panel" id="skilling">
+  <div class="grid">
+    <div class="card">
+      <h2>Cooking Training Guide</h2>
+      <div class="method-card">
+        <h4>Shrimp & Anchovies</h4>
+        <span class="level-req">Level 1-15</span>
+        <p>Fish and cook at Lumbridge or Al Kharid. ~30K XP/hr. Great for brand new accounts.</p>
+      </div>
+      <div class="method-card">
+        <h4>Trout & Salmon</h4>
+        <span class="level-req">Level 15-30</span>
+        <p>Fish at Barbarian Village, cook on the nearby fire/range. ~50K XP/hr.</p>
+      </div>
+      <div class="method-card">
+        <h4>Tuna & Lobsters</h4>
+        <span class="level-req">Level 30-50</span>
+        <p>Buy raw from GE or fish at Catherby. Cook on the Catherby range (diary bonus). ~100K XP/hr.</p>
+      </div>
+      <div class="method-card">
+        <h4>Wines (Jug of Wine)</h4>
+        <span class="level-req">Level 35-68</span>
+        <p>Fastest method in the game. Buy grapes + jugs of water from GE, combine. ~500K XP/hr! Cheap and AFK.</p>
+      </div>
+      <div class="method-card">
+        <h4>Lobsters &rarr; Swordfish &rarr; Monkfish</h4>
+        <span class="level-req">Level 50-80</span>
+        <p>Cook on the Hosidius Kitchen range (requires 100% Hosidius favour) for lowest burn rates. ~150-200K XP/hr.</p>
+      </div>
+      <div class="method-card">
+        <h4>Sharks</h4>
+        <span class="level-req">Level 80-93</span>
+        <p>Stop burning at 99 (94 with cooking gauntlets + Hosidius range). ~200K XP/hr. Small profit with gauntlets.</p>
+      </div>
+      <div class="method-card">
+        <h4>Anglerfish</h4>
+        <span class="level-req">Level 84-99</span>
+        <p>Profitable at high levels! Stop burning at 99 (93 with gauntlets + Hosidius). ~150K XP/hr but good GP.</p>
+      </div>
+      <div class="method-card">
+        <h4>Karambwans (1-tick)</h4>
+        <span class="level-req">Level 30+ (optimal 90+)</span>
+        <p>1-tick cooking karambwans is the fastest traditional method at ~800K XP/hr. Requires practice!</p>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Cooking Milestones</h2>
+      <ul class="checklist" id="cooking-checklist">
+        <li><input type="checkbox" id="ck1"><label for="ck1">Level 35 &mdash; Can make Wines (fastest XP)</label></li>
+        <li><input type="checkbox" id="ck2"><label for="ck2">Level 43 &mdash; Can make Lobsters</label></li>
+        <li><input type="checkbox" id="ck3"><label for="ck3">Level 62 &mdash; Can make Monkfish</label></li>
+        <li><input type="checkbox" id="ck4"><label for="ck4">Level 68 &mdash; Stop burning Wines</label></li>
+        <li><input type="checkbox" id="ck5"><label for="ck5">Level 76 &mdash; Can make Sharks</label></li>
+        <li><input type="checkbox" id="ck6"><label for="ck6">Level 80 &mdash; Can cook Anglerfish</label></li>
+        <li><input type="checkbox" id="ck7"><label for="ck7">Level 84 &mdash; Can make Anglerfish</label></li>
+        <li><input type="checkbox" id="ck8"><label for="ck8">Level 91 &mdash; Karamja Elite diary req</label></li>
+        <li><input type="checkbox" id="ck9"><label for="ck9">Level 99 &mdash; Cooking Cape!</label></li>
+      </ul>
+      <div class="note"><strong>Cooking Gauntlets:</strong> From the Family Crest quest. Reduces burn rates significantly &mdash; essential for profit cooking!</div>
+      <div class="note"><strong>Hosidius Range:</strong> 100% Hosidius favour unlocks the kitchen range with the lowest burn rates in the game.</div>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <h2>Profitable Recipes</h2>
+      <table>
+        <tr><th>Food</th><th>Level</th><th>Notes</th></tr>
+        <tr><td>Karambwan</td><td>30</td><td class="profit">Great profit + fast XP with 1-tick method</td></tr>
+        <tr><td>Anglerfish</td><td>84</td><td class="profit">Consistent profit, popular PvM food</td></tr>
+        <tr><td>Sharks</td><td>80</td><td class="profit">Profit at high levels with gauntlets</td></tr>
+        <tr><td>Manta Ray</td><td>91</td><td class="profit">Good profit, heals 22</td></tr>
+        <tr><td>Dark Crab</td><td>90</td><td class="profit">Profitable but raw crabs are pricey</td></tr>
+        <tr><td>Pies (Summer/Wild)</td><td>95</td><td class="profit">High profit but slow, used for skill boosts</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Skill Tracker</h2>
+      <p style="color:var(--muted);margin-bottom:8px;">Track any skill goals. Add your own!</p>
+      <ul class="checklist" id="skill-goals-checklist"></ul>
+      <div class="add-row">
+        <input type="text" id="skill-goal-input" placeholder="e.g. 99 Cooking, 85 Mining for Falador Elite">
+        <button class="btn add-btn" onclick="addCustomItem('skill-goals-checklist', 'skill-goal-input')">+ Add</button>
+      </div>
     </div>
   </div>
 </div>
@@ -279,9 +429,16 @@
         <li><input type="checkbox" id="d7"><label for="d7">Seaweed &amp; sand (crafting)</label></li>
         <li><input type="checkbox" id="d8"><label for="d8">Kingdom of Miscellania &mdash; check coffers</label></li>
         <li><input type="checkbox" id="d9"><label for="d9">Shooting Stars</label></li>
-        <li><input type="checkbox" id="d10"><label for="d10">Daily spin (Squeal of Fortune is not a thing, ignore this if OSRS only)</label></li>
+        <li><input type="checkbox" id="d10"><label for="d10">Daily spin</label></li>
       </ul>
-      <button class="reset-btn" onclick="resetChecklist('daily-checklist')">Reset Dailies</button>
+      <ul class="checklist" id="daily-custom-checklist"></ul>
+      <div class="add-row">
+        <input type="text" id="daily-custom-input" placeholder="Add a custom daily...">
+        <button class="btn add-btn" onclick="addCustomItem('daily-custom-checklist', 'daily-custom-input')">+ Add</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn reset-btn" style="margin-left:0;" onclick="resetChecklist('daily-checklist');resetChecklist('daily-custom-checklist')">Reset Dailies</button>
+      </div>
     </div>
     <div class="card">
       <h2>Weekly / Periodic</h2>
@@ -292,7 +449,14 @@
         <li><input type="checkbox" id="w4"><label for="w4">Farm contracts (Farming Guild)</label></li>
         <li><input type="checkbox" id="w5"><label for="w5">Slayer task</label></li>
       </ul>
-      <button class="reset-btn" onclick="resetChecklist('weekly-checklist')">Reset Weeklies</button>
+      <ul class="checklist" id="weekly-custom-checklist"></ul>
+      <div class="add-row">
+        <input type="text" id="weekly-custom-input" placeholder="Add a custom weekly...">
+        <button class="btn add-btn" onclick="addCustomItem('weekly-custom-checklist', 'weekly-custom-input')">+ Add</button>
+      </div>
+      <div style="margin-top:12px;">
+        <button class="btn reset-btn" style="margin-left:0;" onclick="resetChecklist('weekly-checklist');resetChecklist('weekly-custom-checklist')">Reset Weeklies</button>
+      </div>
     </div>
   </div>
 </div>
@@ -301,7 +465,7 @@
 <div class="panel" id="bosses">
   <div class="grid">
     <div class="card">
-      <h2>Wilderness Bosses (Hard Diary)</h2>
+      <h2>Wilderness Bosses</h2>
       <h3>Scorpia</h3>
       <ul>
         <li>Location: Scorpia's Cave, level 53 Wilderness</li>
@@ -327,48 +491,69 @@
       </ul>
     </div>
     <div class="card">
-      <h2>Raids Notes</h2>
+      <h2>Raids Quick Reference</h2>
       <h3>Chambers of Xeric (CoX)</h3>
       <ul>
         <li>Room layouts are random &mdash; need multiple runs for all music tracks</li>
-        <li>Soloable with maxed combat</li>
+        <li>Soloable with high combat stats</li>
         <li>Don't need to complete for music &mdash; just enter rooms</li>
         <li>Key rooms: Ice Demon, Olm, Vasa, Vanguards, Tekton, Muttadiles</li>
       </ul>
       <h3>Theatre of Blood (ToB)</h3>
       <ul>
-        <li>Soloed entry mode &mdash; most tracks likely already unlocked</li>
-        <li>Each room has its own track: Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik</li>
-        <li>Check in-game music list to confirm</li>
+        <li>Entry mode is soloable with decent gear</li>
+        <li>Each room has its own music track: Maiden, Bloat, Nylocas, Sotetseg, Xarpus, Verzik</li>
+        <li>Check in-game music list to confirm which you have</li>
       </ul>
-      <div class="note"><strong>With maxed combat</strong> you can solo CoX comfortably. Just run a few raids to cycle through all room rotations for the music tracks.</div>
+      <h3>Tombs of Amascut (ToA)</h3>
+      <ul>
+        <li>Solo-friendly with invocation system</li>
+        <li>Start at 0 invocations to learn</li>
+        <li>Music tracks unlock per room</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <h2>My Boss Notes</h2>
+    <p style="color:var(--muted);margin-bottom:8px;">Add notes about bosses, strategies, or gear setups.</p>
+    <ul class="checklist" id="boss-notes-checklist"></ul>
+    <div class="add-row">
+      <input type="text" id="boss-note-input" placeholder="e.g. Need fire cape for diary, Zulrah rotation cheat sheet">
+      <button class="btn add-btn" onclick="addCustomItem('boss-notes-checklist', 'boss-note-input')">+ Add</button>
     </div>
   </div>
 </div>
 
-<!-- SKILL GOALS -->
-<div class="panel" id="skills">
+<!-- GOALS -->
+<div class="panel" id="goals">
+  <div class="grid">
+    <div class="card">
+      <h2>Current Goals</h2>
+      <p style="color:var(--muted);margin-bottom:8px;">What are you working toward right now?</p>
+      <ul class="checklist" id="current-goals-checklist"></ul>
+      <div class="add-row">
+        <input type="text" id="current-goal-input" placeholder="e.g. Quest Cape, 99 Cooking, Fire Cape">
+        <button class="btn add-btn" onclick="addCustomItem('current-goals-checklist', 'current-goal-input')">+ Add</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Long-term Goals</h2>
+      <p style="color:var(--muted);margin-bottom:8px;">The big dream goals.</p>
+      <ul class="checklist" id="longterm-goals-checklist"></ul>
+      <div class="add-row">
+        <input type="text" id="longterm-goal-input" placeholder="e.g. Max Cape, Infernal Cape, All pets">
+        <button class="btn add-btn" onclick="addCustomItem('longterm-goals-checklist', 'longterm-goal-input')">+ Add</button>
+      </div>
+    </div>
+  </div>
   <div class="card">
-    <h2>Elite Diary Skill Requirements</h2>
-    <p style="color:var(--muted);margin-bottom:12px;">Key skill levels needed across all elite diaries. Check off once you hit the level.</p>
-    <table>
-      <tr><th>Skill</th><th>Level</th><th>For Diary</th><th>Done</th></tr>
-      <tr><td>Agility</td><td>85</td><td>Ardougne</td><td><input type="checkbox" id="s1"></td></tr>
-      <tr><td>Cooking</td><td>91</td><td>Karamja</td><td><input type="checkbox" id="s2"></td></tr>
-      <tr><td>Crafting</td><td>85</td><td>Fremennik</td><td><input type="checkbox" id="s3"></td></tr>
-      <tr><td>Farming</td><td>91</td><td>Morytania</td><td><input type="checkbox" id="s4"></td></tr>
-      <tr><td>Fishing</td><td>82</td><td>Morytania</td><td><input type="checkbox" id="s5"></td></tr>
-      <tr><td>Fletching</td><td>95</td><td>Desert</td><td><input type="checkbox" id="s6"></td></tr>
-      <tr><td>Herblore</td><td>90</td><td>Kandarin</td><td><input type="checkbox" id="s7"></td></tr>
-      <tr><td>Hunter</td><td>82</td><td>Western</td><td><input type="checkbox" id="s8"></td></tr>
-      <tr><td>Mining</td><td>85</td><td>Falador</td><td><input type="checkbox" id="s9"></td></tr>
-      <tr><td>Runecraft</td><td>86</td><td>Kourend</td><td><input type="checkbox" id="s10"></td></tr>
-      <tr><td>Slayer</td><td>93</td><td>Morytania</td><td><input type="checkbox" id="s11"></td></tr>
-      <tr><td>Smithing</td><td>91</td><td>Falador</td><td><input type="checkbox" id="s12"></td></tr>
-      <tr><td>Thieving</td><td>91</td><td>Ardougne / Desert</td><td><input type="checkbox" id="s13"></td></tr>
-      <tr><td>Woodcutting</td><td>90</td><td>Kourend</td><td><input type="checkbox" id="s14"></td></tr>
-    </table>
-    <div class="note"><strong>Combat stats:</strong> Maxed &mdash; all PvM requirements covered!</div>
+    <h2>Quest Progress</h2>
+    <p style="color:var(--muted);margin-bottom:8px;">Track quests you're working on or planning.</p>
+    <ul class="checklist" id="quest-checklist"></ul>
+    <div class="add-row">
+      <input type="text" id="quest-input" placeholder="e.g. Dragon Slayer II, Song of the Elves">
+      <button class="btn add-btn" onclick="addCustomItem('quest-checklist', 'quest-input')">+ Add</button>
+    </div>
   </div>
 </div>
 
@@ -378,15 +563,18 @@
     <h2>General Notes</h2>
     <textarea class="notes-area" id="general-notes" placeholder="Write your RuneScape notes here... goals, strategies, gear setups, anything!"></textarea>
     <br>
-    <button class="save-btn" onclick="saveNotes()">Save Notes</button>
+    <button class="btn save-btn" onclick="saveNotes()">Save Notes</button>
   </div>
   <div class="card">
     <h2>Quick Links</h2>
     <ul style="list-style:none;padding:0;">
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/" target="_blank">OSRS Wiki &mdash; Home</a></li>
       <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Achievement_Diary" target="_blank">OSRS Wiki &mdash; Achievement Diaries</a></li>
       <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Music" target="_blank">OSRS Wiki &mdash; Music Track List</a></li>
-      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Mage_Training_Arena" target="_blank">OSRS Wiki &mdash; Mage Training Arena</a></li>
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Cooking_training" target="_blank">OSRS Wiki &mdash; Cooking Training Guide</a></li>
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Quest/List" target="_blank">OSRS Wiki &mdash; Quest List</a></li>
       <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Achievement_Diary/Skill_requirements" target="_blank">OSRS Wiki &mdash; Diary Skill Requirements</a></li>
+      <li style="padding:6px 0;"><a href="https://oldschool.runescape.wiki/w/Optimal_quest_guide" target="_blank">OSRS Wiki &mdash; Optimal Quest Guide</a></li>
     </ul>
   </div>
 </div>
@@ -402,11 +590,65 @@
     });
   });
 
-  // Save/load checkbox state to localStorage
+  // Player name
+  const nameInput = document.getElementById('player-name');
+  nameInput.addEventListener('input', () => {
+    localStorage.setItem('rs-tracker-name', nameInput.value);
+    document.title = nameInput.value ? nameInput.value + "'s OSRS Tracker" : 'OSRS Tracker';
+  });
+  function loadName() {
+    const saved = localStorage.getItem('rs-tracker-name');
+    if (saved) {
+      nameInput.value = saved;
+      document.title = saved + "'s OSRS Tracker";
+    }
+  }
+
+  // Diary tag cycling
+  const tagStates = ['todo', 'wip', 'done', 'na'];
+  const tagLabels = { todo: 'Todo', wip: 'WIP', done: 'Done', na: 'N/A' };
+  const tagClasses = { todo: 'tag-todo', wip: 'tag-wip', done: 'tag-done', na: 'tag-na' };
+
+  function saveDiaryStates() {
+    const states = {};
+    document.querySelectorAll('[data-diary]').forEach(tag => {
+      states[tag.dataset.diary] = tag.dataset.state || 'todo';
+    });
+    localStorage.setItem('rs-tracker-diaries', JSON.stringify(states));
+  }
+
+  function loadDiaryStates() {
+    const saved = localStorage.getItem('rs-tracker-diaries');
+    if (saved) {
+      const states = JSON.parse(saved);
+      Object.entries(states).forEach(([key, state]) => {
+        const tag = document.querySelector('[data-diary="' + key + '"]');
+        if (tag) setTagState(tag, state);
+      });
+    }
+  }
+
+  function setTagState(tag, state) {
+    tag.dataset.state = state;
+    tag.textContent = tagLabels[state];
+    tag.className = 'tag ' + tagClasses[state];
+  }
+
+  document.querySelectorAll('[data-diary]').forEach(tag => {
+    tag.dataset.state = 'todo';
+    tag.addEventListener('click', () => {
+      const current = tag.dataset.state;
+      const next = tagStates[(tagStates.indexOf(current) + 1) % tagStates.length];
+      setTagState(tag, next);
+      saveDiaryStates();
+    });
+  });
+
+  // Save/load checkbox state
   function saveCheckboxes() {
     const checks = {};
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-      checks[cb.id] = cb.checked;
+      if (cb.id) checks[cb.id] = cb.checked;
     });
     localStorage.setItem('rs-tracker-checks', JSON.stringify(checks));
   }
@@ -427,7 +669,7 @@
 
   function updateLabel(checkbox) {
     const label = checkbox.nextElementSibling;
-    if (label) {
+    if (label && label.tagName === 'LABEL') {
       label.classList.toggle('done', checkbox.checked);
     }
   }
@@ -439,7 +681,6 @@
     });
   });
 
-  // Reset a checklist section
   function resetChecklist(id) {
     document.querySelectorAll('#' + id + ' input[type="checkbox"]').forEach(cb => {
       cb.checked = false;
@@ -448,7 +689,86 @@
     saveCheckboxes();
   }
 
-  // Notes save/load
+  // Custom checklist items
+  let customIdCounter = parseInt(localStorage.getItem('rs-tracker-custom-counter') || '0');
+
+  function saveCustomItems() {
+    const lists = {};
+    document.querySelectorAll('[id$="-checklist"]').forEach(list => {
+      const customs = [];
+      list.querySelectorAll('[data-custom]').forEach(li => {
+        const cb = li.querySelector('input[type="checkbox"]');
+        const label = li.querySelector('label');
+        if (cb && label) {
+          customs.push({ id: cb.id, text: label.textContent, checked: cb.checked });
+        }
+      });
+      if (customs.length > 0) lists[list.id] = customs;
+    });
+    localStorage.setItem('rs-tracker-custom-items', JSON.stringify(lists));
+    localStorage.setItem('rs-tracker-custom-counter', String(customIdCounter));
+  }
+
+  function loadCustomItems() {
+    const saved = localStorage.getItem('rs-tracker-custom-items');
+    if (saved) {
+      const lists = JSON.parse(saved);
+      Object.entries(lists).forEach(([listId, items]) => {
+        const list = document.getElementById(listId);
+        if (list) {
+          items.forEach(item => {
+            createCustomLi(list, item.id, item.text, item.checked);
+          });
+        }
+      });
+    }
+  }
+
+  function createCustomLi(list, id, text, checked) {
+    const li = document.createElement('li');
+    li.dataset.custom = 'true';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = id;
+    cb.checked = !!checked;
+    cb.addEventListener('change', () => { updateLabel(cb); saveCustomItems(); saveCheckboxes(); });
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.textContent = text;
+    if (checked) label.classList.add('done');
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-item';
+    removeBtn.textContent = '\u00d7';
+    removeBtn.title = 'Remove';
+    removeBtn.addEventListener('click', () => { li.remove(); saveCustomItems(); });
+    li.appendChild(cb);
+    li.appendChild(label);
+    li.appendChild(removeBtn);
+    list.appendChild(li);
+  }
+
+  function addCustomItem(listId, inputId) {
+    const input = document.getElementById(inputId);
+    const text = input.value.trim();
+    if (!text) return;
+    const list = document.getElementById(listId);
+    const id = 'custom-' + (++customIdCounter);
+    createCustomLi(list, id, text, false);
+    input.value = '';
+    saveCustomItems();
+  }
+
+  // Enter key to add items
+  document.querySelectorAll('.add-row input').forEach(input => {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const btn = input.nextElementSibling;
+        if (btn) btn.click();
+      }
+    });
+  });
+
+  // Notes
   function saveNotes() {
     localStorage.setItem('rs-tracker-notes', document.getElementById('general-notes').value);
     const btn = document.querySelector('.save-btn');
@@ -462,8 +782,11 @@
   }
 
   // Init
+  loadName();
   loadCheckboxes();
   loadNotes();
+  loadDiaryStates();
+  loadCustomItems();
 </script>
 
 </body>
